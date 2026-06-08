@@ -8,7 +8,7 @@ use App\Services\QRCodeService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
 
 class ReservationController extends Controller
 {
@@ -68,7 +68,11 @@ class ReservationController extends Controller
 
     public function cancel(Reservation $reservation)
     {
-        $this->authorize('cancel', $reservation);
+       // $this->authorize('cancel', $reservation);
+
+       if ($reservation->user_id !== auth()->id()) {
+        return $this->error('Unauthorized');
+      }
 
         if (!in_array($reservation->status, ['pending', 'approved'])) {
             return $this->error('Cannot cancel this reservation');

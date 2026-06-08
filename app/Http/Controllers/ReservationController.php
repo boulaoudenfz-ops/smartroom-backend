@@ -66,22 +66,48 @@ class ReservationController extends Controller
         return $this->success($reservation->load(['room', 'user']));
     }
 
-    public function cancel(Reservation $reservation)
-    {
-       // $this->authorize('cancel', $reservation);
 
-       if ($reservation->user_id !== auth()->id()) {
-        return $this->error('Unauthorized');
-      }
+   public function cancel(Reservation $reservation)
+{
+    $user = auth()->user();
 
-        if (!in_array($reservation->status, ['pending', 'approved'])) {
-            return $this->error('Cannot cancel this reservation');
-        }
-
-        $reservation->update(['status' => 'cancelled']);
-
-        return $this->success($reservation, 'Reservation cancelled');
+    // 1. Check ownership (or admin if you have role system)
+    if ($reservation->user_id !== $user->id && !$user->is_admin) {
+        return $this->error('Unauthorized action');
     }
+
+    // 2. Check if reservation can be cancelled
+    if (!in_array($reservation->status, ['pending', 'approved'])) {
+        return $this->error('Cannot cancel this reservation');
+    }
+
+    // 3. Prevent double cancellation
+    if ($reservation->status === 'cancelled') {
+        return $this->error('Reservation already cancelled');
+    }
+
+    // 4. Cancel reservation
+    $reservation->update([
+        'status' => 'cancelled'
+    ]);
+
+    return $this->success($reservation, 'Reservation cancelled successfully');
+}
+
+
+
+    // public function cancel(Reservation $reservation)
+    // {
+    //     $this->authorize('cancel', $reservation);
+
+    //     if (!in_array($reservation->status, ['pending', 'approved'])) {
+    //         return $this->error('Cannot cancel this reservation');
+    //     }
+
+    //     $reservation->update(['status' => 'cancelled']);
+
+    //     return $this->success($reservation, 'Reservation cancelled');
+    // }
 
     public function checkin(Request $request)
     {

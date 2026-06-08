@@ -66,14 +66,25 @@ class ReservationController extends Controller
         return $this->success($reservation->load(['room', 'user']));
     }
 
-
- public function cancel(Reservation $reservation)
+public function cancel(Reservation $reservation)
 {
-    if (!$reservation->canCancel(auth()->user())) {
-        return $this->error('Unauthorized or not allowed');
+    $user = auth()->user();
+
+    if ($reservation->user_id !== $user->id && !$user->is_admin) {
+        return $this->error('Unauthorized');
     }
 
-    $reservation->update(['status' => 'cancelled']);
+    if (!in_array($reservation->status, ['pending', 'approved'])) {
+        return $this->error('Cannot cancel this reservation');
+    }
+
+    if ($reservation->status === 'cancelled') {
+        return $this->error('Already cancelled');
+    }
+
+    $reservation->update([
+        'status' => 'cancelled'
+    ]);
 
     return $this->success($reservation, 'Reservation cancelled successfully');
 }
